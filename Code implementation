@@ -1,0 +1,252 @@
+# Thermometer Simulation
+
+
+## 1. HTML/JavaScript (Frontend)
+
+html
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Digital Thermometer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f5f5f5;
+        }
+        .thermometer-container {
+            width: 300px;
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        .thermometer {
+            height: 200px;
+            width: 50px;
+            background: linear-gradient(to top, #ff0000, #ff9900, #ffff00, #00ff00);
+            margin: 20px auto;
+            border-radius: 25px;
+            position: relative;
+            border: 2px solid #333;
+        }
+        .mercury {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            background-color: #ff0000;
+            border-radius: 25px;
+            transition: height 0.5s;
+        }
+        .temperature-display {
+            font-size: 3em;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+        .unit-toggle {
+            margin-top: 20px;
+        }
+        button {
+            padding: 8px 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="thermometer-container">
+        <h1>Digital Thermometer</h1>
+        <div class="thermometer">
+            <div class="mercury" id="mercury"></div>
+        </div>
+        <div class="temperature-display">
+            <span id="temperature">0</span>
+            <span id="unit">°C</span>
+        </div>
+        <div class="unit-toggle">
+            <button id="toggleUnit">Switch to °F</button>
+        </div>
+    </div>
+
+    <script>
+        // Simulate temperature updates (in a real app, this would come from a server)
+        let currentTemp = 20;
+        let isCelsius = true;
+        
+        const mercury = document.getElementById('mercury');
+        const tempDisplay = document.getElementById('temperature');
+        const unitDisplay = document.getElementById('unit');
+        const toggleBtn = document.getElementById('toggleUnit');
+        
+        function updateDisplay() {
+            // Limit temperature range for display purposes (0-100°C or 32-212°F)
+            let displayTemp = currentTemp;
+            if (isCelsius) {
+                displayTemp = Math.max(0, Math.min(100, currentTemp));
+                mercury.style.height = `${displayTemp}%`;
+                unitDisplay.textContent = '°C';
+                toggleBtn.textContent = 'Switch to °F';
+            } else {
+                const fahrenheit = (currentTemp * 9/5) + 32;
+                displayTemp = Math.max(32, Math.min(212, fahrenheit));
+                mercury.style.height = `${(displayTemp - 32) * 100 / 180}%`;
+                unitDisplay.textContent = '°F';
+                toggleBtn.textContent = 'Switch to °C';
+            }
+            tempDisplay.textContent = displayTemp.toFixed(1);
+        }
+        
+        toggleBtn.addEventListener('click', () => {
+            isCelsius = !isCelsius;
+            updateDisplay();
+        });
+        
+        // Simulate temperature changes
+        function simulateTemperature() {
+            // Random fluctuation between -0.5 and +0.5 degrees
+            currentTemp += (Math.random() - 0.5);
+            
+            // Simulate environment changes
+            if (Math.random() > 0.95) {
+                currentTemp += (Math.random() - 0.5) * 5;
+            }
+            
+            // Keep within reasonable bounds
+            currentTemp = Math.max(-10, Math.min(50, currentTemp));
+            
+            updateDisplay();
+            
+            // In a real application, we would fetch from a server here
+            // fetchTemperatureFromServer();
+        }
+        
+        updateDisplay();
+        setInterval(simulateTemperature, 1000);
+    </script>
+</body>
+</html>
+
+
+## 2. C++ (Temperature Sensor Simulation)
+
+cpp
+// thermometer_sensor.cpp - Simulates a physical temperature sensor
+#include <iostream>
+#include <random>
+#include <chrono>
+#include <thread>
+#include <cmath>
+
+class Thermometer {
+private:
+    double currentTemp;
+    std::default_random_engine generator;
+    std::normal_distribution<double> distribution;
+    
+public:
+    Thermometer(double initialTemp) : currentTemp(initialTemp), 
+                                    generator(std::random_device{}()),
+                                    distribution(0.0, 0.1) {}
+    
+    double readTemperature() {
+        // Small random fluctuation
+        double fluctuation = distribution(generator);
+        currentTemp += fluctuation;
+        
+        // Occasionally add larger environmental changes
+        static int counter = 0;
+        if (++counter % 50 == 0) {
+            double envChange = (double)(rand() % 100 - 50) / 10.0;
+            currentTemp += envChange;
+        }
+        
+        // Simulate realistic temperature range
+        currentTemp = std::max(-20.0, std::min(60.0, currentTemp));
+        
+        return currentTemp;
+    }
+};
+
+int main() {
+    Thermometer thermometer(20.0); // Start at 20°C
+    
+    while (true) {
+        double temp = thermometer.readTemperature();
+        std::cout << temp << std::endl; // Output for other programs to read
+        
+        // Wait for 1 second
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+    }
+    
+    return 0;
+}
+
+
+## 3. Java (Middleware/Backend)
+
+java
+// ThermometerServer.java - Middleware that reads from C++ sensor and serves to web
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.net.InetSocketAddress;
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
+import com.sun.net.httpserver.HttpServer;
+
+public class ThermometerServer {
+    private static double currentTemperature = 20.0;
+
+    public static void main(String[] args) throws Exception {
+        // Start the sensor reader thread
+        new Thread(() -> {
+            try {
+                Process process = Runtime.getRuntime().exec("./thermometer_sensor");
+                BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(process.getInputStream()));
+                
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    try {
+                        currentTemperature = Double.parseDouble(line);
+                    } catch (NumberFormatException e) {
+                        System.err.println("Invalid temperature reading: " + line);
+                    }
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }).start();
+
+        // Create HTTP server
+        HttpServer server = HttpServer.create(new InetSocketAddress(8000), 0);
+        server.createContext("/temperature", new TemperatureHandler());
+        server.setExecutor(null);
+        server.start();
+        System.out.println("Server started on port 8000");
+    }
+
+    static class TemperatureHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            String response = String.format("{ \"temperature\": %.2f, \"unit\": \"C\" }", 
+                                           currentTemperature);
+            exchange.getResponseHeaders().add("Content-Type", "application/json");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
+            exchange.sendResponseHeaders(200, response.length());
+            OutputStream os = exchange.getResponseBody();
+            os.write(response.getBytes());
+            os.close();
+        }
+    }
+}
